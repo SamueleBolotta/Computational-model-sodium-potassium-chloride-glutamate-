@@ -1,0 +1,50 @@
+function dydt = myode(T,Vmnh,TimeInj,IInj,TimeSyn,Gsyn)
+
+%% Inputs
+% T is the time vector that is generated after interpolation;
+% yA is a 4x1 matrix that contains membrane potential and gating variables
+% for sodium and potassium.
+% t is the time vector that will be interplated with the injected current
+% and the synaptic currents
+% syn is a 2x: matrix that contains the synaptic conductances
+
+%% Output
+% time
+% dydt is a :x4 matrix that contains the membrane potential and the gating
+% variables plotted against time.
+
+
+%% Constants
+ENa=56; % Reversal potential of Sodium
+EK=-102; % Reversal potential of Potassium
+El=-49; % Leakage reversal potential
+EGlu = 0;  % Reversal potential of Glu
+EChl = -76;  % Reversal potential of Chl
+
+%% Capacitance
+Cm = 0.01;
+
+%% Values of conductances
+GL = 0.003; % Leak maximal conductance
+GNa = 1.2; % Maximal conductance of Sodium
+GK = 0.36; % Maximal conductance of Potassium
+
+%% Conductances times driving force
+INa = (GNa * Vmnh(2,1)^3 * Vmnh(4,1)) *(Vmnh(1,:) - ENa);
+IK = (GK * Vmnh(3,1)^4) *(Vmnh(1,:) - EK);
+Il = GL *(Vmnh(1,:) - El);
+IPSC = Gsyn(1,:) * (Vmnh(1,1) - EChl);
+EPSC = Gsyn(2,:) * (Vmnh(1,1) - EGlu);
+
+%% Interpolate currents
+IInj = interp1(TimeInj,IInj,T,'linear','extrap');
+IPSC = interp1(TimeSyn,IPSC,T,'linear','extrap');
+EPSC = interp1(TimeSyn,EPSC,T,'linear','extrap');
+
+%% Integration
+dydt = [((1/Cm)*(IInj-(INa+IK+Il+IPSC+EPSC))); 
+alpham(Vmnh(1))*(1-Vmnh(2,1))-betam(Vmnh(1))*Vmnh(2,1);
+alphan(Vmnh(1))*(1-Vmnh(3,1))-betan(Vmnh(1))*Vmnh(3,1);
+alphah(Vmnh(1))*(1-Vmnh(4,1))-betah(Vmnh(1))*Vmnh(4,1)];
+
+end
