@@ -1,0 +1,23 @@
+function conductance = gSyn(gmax,time_span,starting_times,time_rise,time_decay)
+%WCR 20210410
+%Compute synaptic conductance
+%Inputs:
+%   t=time now (scalar) or times of a waveform (vector)
+%   tsyn=time(s) of synaptic input
+%   tr=rise time for each synaptic input  (typ: exc,inh=.73,.44 msec)
+%   td=decay time for each synaptic input (typ: exc,inh=3.0,5.0 msec)
+%Output: g=scalar or vector, same length as t 
+
+conductance=zeros(1,length(time_span));
+
+for i=1:length(time_span)
+    for j=1:length(starting_times)
+        if time_span(i)>=starting_times(j)
+            conductance(i)=conductance(i)+(1-exp((starting_times(j)-time_span(i))/time_rise))*exp((starting_times(j)-time_span(i))/time_decay);
+        end
+    end
+end
+
+conductance = gmax * conductance;
+
+end
