@@ -1,0 +1,50 @@
+function x = smoothstep(t,ts,as,tau)
+%W.Rose 20210410
+%Return x(t), the value of a smoothed series of steps.
+%For use in dydt() passed to an ODE routine.
+%Inputs
+% t=time (may be a scalar or vector)
+% ts()=array of step times (must be in ascending order)
+% as()=vector of amplitudes
+% tau=transition time between levels
+%Output (ignoring the smoothing)
+% x(t)=0        when t<ts(1)
+% x(t)=a(i)     when ts(i)<=t<ts(i+1)
+% x(t)=a(end)   when t>=t(end)
+%Smoothing: each transition is smoothed with a half-cycle of a cosine,
+%with duration tau. Set tau<(time between steps) to assure smoothness.
+%This was tested with smoothstepTest.m.
+
+x=zeros(1,length(t));   %x will have same length as t
+
+if length(ts)~=length(as)
+    disp('Error in smoothstep(t,ts,as,tau): ts and as must have same length.');
+    return
+end
+
+n=length(ts);
+
+for i=1:length(t)
+    if t(i)<ts(1)-tau/2
+        x(i)=0;                 %before transition to step 1
+    elseif t(i)<ts(1)+tau/2     %during transition to step 1
+        x(i)=as(1)*0.5*(1+sin((t(i)-ts(1))*pi/tau));
+    else                        %all subsequent
+        if t(i)>=ts(n)+tau/2    %t(i) is past the last transition
+            x(i)=as(n);
+        else
+            j=1;
+            while j<n
+                if t(i)<ts(j+1)-tau/2       %t(i) in flat section
+                    x(i)=as(j);
+                    j=n;
+                elseif t(i)<ts(j+1)+tau/2
+                    x(i)=as(j)+(as(j+1)-as(j))*0.5*(1+sin((t(i)-ts(j+1))*pi/tau));
+                    j=n;
+                else
+                    j=j+1;
+                end
+            end
+        end
+    end
+end
