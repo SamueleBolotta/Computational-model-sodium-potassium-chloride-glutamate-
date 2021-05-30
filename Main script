@@ -1,0 +1,55 @@
+close all
+clc; clear
+
+%% Duration in ms
+duration_of_experiment = 150;
+dt = 0.025;
+tspan = 0:dt:duration_of_experiment;
+
+%% Injected current
+Ts = 0:1:duration_of_experiment;                                           % ts()=array of step times (must be in ascending order)
+As = [zeros(1,15), ones(1,numel(Ts) - 15)];                                % as()=vector of amplitudes
+
+% Time for injected current
+TimeInj=tspan(1):dt:tspan(end);
+IInj=smoothstep(TimeInj,Ts,As,.1);
+
+%% Synaptic conductances
+GbarChl = 0.7;
+GbarGlu = 0.3;                                                       %times of excitatory input
+tau_rise_Ex = 0.73;                                                        % Tau rise for E
+tau_rise_In = 0.44;                                                        % Tau rise for I
+tau_decay_Ex = 3;                                                          % Tau decay for E
+tau_decay_In = 5;                                                          % Tau decay for I
+TimeSyn=tspan(1):dt:tspan(end);
+
+% Start and end time for synaptic currents
+start_tsyne = 10;
+start_tsyni = 10;
+end_tsyne = 130;
+end_tsyni = 130;
+tsyne=[start_tsyne:20:end_tsyne];                                          %times of inhibitory input
+tsyni=[start_tsyni:20:end_tsyni];                                          %times of excitatory input
+
+gI=gSyn(GbarChl,TimeSyn,tsyni,tau_rise_In,tau_decay_In);
+gE=gSyn(GbarGlu,TimeSyn,tsyne,tau_rise_Ex,tau_decay_Ex);
+Gsyn = [gI;gE];
+
+%% Membrane potential; Sodium and potassium gating variables
+V=-60;                                                                     % Initial Membrane voltage
+m=alpham(V)/(alpham(V)+betam(V));                                          % Initial m-value
+n=alphan(V)/(alphan(V)+betan(V));                                          % Initial n-value
+h=alphah(V)/(alphah(V)+betah(V));                                          % Initial h-value
+yF0 =[V;m;n;h];
+
+%% Integration
+[T,yF] = ode113(@(T,Vmnh) myode(T,Vmnh,TimeInj,IInj,TimeSyn,Gsyn), tspan, yF0);
+
+%% Membrane potential; gating variables
+ODv=yF(:,1);
+ODm=yF(:,2);
+ODn=yF(:,3);
+ODh=yF(:,4);
+
+%% Plots
+plotting
